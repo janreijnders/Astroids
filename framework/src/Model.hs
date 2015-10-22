@@ -25,14 +25,22 @@ data MovementAction = NoMovement | Thrust
     deriving (Eq)
 data ShootAction    = Shoot      | DontShoot
     deriving (Eq)
-data Entity         = Entity {
+data Entity         = Player {
         position    :: Point, -- Coördinate the x, y plane.
         speed       :: Vector,-- The length is the absolute speed, the direction is the direction of the movement.
         direction   :: Vector -- As direction vector, make sure it is nomalized.
     }
-type Player     = Entity
-type Enemy      = Entity
-type Projectile = Entity
+                    | Enemy {
+        position    :: Point, -- Coördinate the x, y plane.
+        speed       :: Vector,-- The length is the absolute speed, the direction is the direction of the movement.
+        direction   :: Vector -- As direction vector, make sure it is nomalized.
+        
+    }
+                    | Projectile {
+        position    :: Point, -- Coördinate the x, y plane.
+        speed       :: Vector,-- The length is the absolute speed, the direction is the direction of the movement.
+        direction   :: Vector -- As direction vector, make sure it is nomalized.
+    }
 
 -- In unit lengths per frame
 acceleration :: Float

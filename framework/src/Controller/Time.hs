@@ -23,12 +23,12 @@ timeHandler time world@World{..} = world {rndGen = snd $ nextRndGen, player = up
     where
         nextRndGen          = next rndGen
         update :: Player -> Player
-        update p@Entity{..} = updatePosition $ accelerate movementAction $ rotate rotateAction player
+        update p@Player{..} = updatePosition $ accelerate movementAction $ rotate rotateAction player
             where
                 accelerate NoMovement p         = p
-                accelerate Thrust  p@Entity{..} = p {speed = speed + (mulSV acceleration $ unitVectorAtAngle $ argV direction)}
+                accelerate Thrust  p@Player{..} = p {speed = speed + (mulSV acceleration $ unitVectorAtAngle $ argV direction)}
                 rotate NoRotation  p            = p
-                rotate RotateLeft  p@Entity{..} = p {direction =    rotationSpeed  `rotateV` direction}
-                rotate RotateRight p@Entity{..} = p {direction = (- rotationSpeed) `rotateV` direction}
-        updatePosition e@Entity{..} = e {position = newPosition}
-            where newPosition = speed + position
+                rotate RotateLeft  p@Player{..} = p {direction =    rotationSpeed  `rotateV` direction}
+                rotate RotateRight p@Player{..} = p {direction = (- rotationSpeed) `rotateV` direction}
+        updatePosition e = e {position = newPosition}
+            where newPosition = speed + position e
