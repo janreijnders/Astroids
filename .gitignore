@@ -14,3 +14,9 @@ cabal.sandbox.config
 *.prof
 *.aux
 *.hp
+framework/Setup.hs
+executables/lambda-wars-linux-64bit
+framework/lambda-wars.cabal
+executables/lambda-wars-macosx-64bit
+executables/lambda-wars-windows-32bit.exe
+framework/README.md
