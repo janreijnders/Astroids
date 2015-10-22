@@ -22,13 +22,12 @@ timeHandler :: Float -> World -> World
 timeHandler time world@World{..} = world {rndGen = snd $ nextRndGen, player = update player, enemies = map updatePosition enemies, projectiles = map updatePosition projectiles}
     where
         nextRndGen          = next rndGen
-        update :: Player -> Player
         update p@Player{..} = updatePosition $ accelerate movementAction $ rotate rotateAction player
             where
-                accelerate NoMovement p         = p
-                accelerate Thrust  p@Player{..} = p {speed = speed + (mulSV acceleration $ unitVectorAtAngle $ argV direction)}
-                rotate NoRotation  p            = p
-                rotate RotateLeft  p@Player{..} = p {direction =    rotationSpeed  `rotateV` direction}
-                rotate RotateRight p@Player{..} = p {direction = (- rotationSpeed) `rotateV` direction}
+                accelerate NoMovement p@Player{..} = p {speed = if magV speed < 0.05 then (0, 0) else (1 - deceleration) `mulSV` speed}
+                accelerate Thrust     p@Player{..} = p {speed = (1 - deceleration) `mulSV` (speed + (mulSV acceleration $ unitVectorAtAngle $ argV direction))}
+                rotate NoRotation     p            = p
+                rotate RotateLeft     p@Player{..} = p {direction =    rotationSpeed  `rotateV` direction}
+                rotate RotateRight    p@Player{..} = p {direction = (- rotationSpeed) `rotateV` direction}
         updatePosition e = e {position = newPosition}
-            where newPosition = speed + position e
+            where newPosition = speed e + position e
