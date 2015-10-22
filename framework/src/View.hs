@@ -18,4 +18,4 @@ playerModel = color white $ polygon [(0, 10), (-5, -5), (5, -5)]
 
 draw :: Float -> Float -> World -> Picture
 draw horizontalResolution verticalResolution world@(World{..})
-    = uncurry translate (position player) $ rotate (1/2 * pi +(radToDeg $ argV $ direction player)) playerModel
+    = uncurry translate (position player) $ rotate (radToDeg (1/2 * pi - (argV $ direction player))) playerModel
