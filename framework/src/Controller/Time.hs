@@ -25,16 +25,22 @@ timeHandler time world@World{..} = world {
     enemies     = map updatePosition newEnemies,
     projectiles = map updatePosition $ newProjectiles shootAction,
     exhausts    = map updatePosition $ newExhausts movementAction,
-    powerUps    = map updatePosition newPowerUps }
+    powerUps    = map updatePosition newPowerUps,
+    shootAction = DontShoot }
     where
-        newEnemies               = enemies -- TODO add random enemies
-        newProjectiles DontShoot = projectiles 
-        newProjectiles Shoot     = [] -- TODO add projectiles when the player presses SPACE
+        randomList               = randoms rndGen :: [Int]
+        newEnemies               = enemies -- TODO add random enemies and detect and delete hit enemies
+        newProjectiles DontShoot = projectiles --TODO make some kind of garbage collector for projectiles that are off the screen
+        newProjectiles Shoot     = Projectile pos spd dir : take 999 projectiles
+            where
+                pos = position newPlayer
+                spd = (speed newPlayer) + projectileSpeed `mulSV`
+                      unitVectorAtAngle (argV $ direction newPlayer)
+                dir = direction newPlayer
         newExhausts NoMovement   = take (length exhausts - 15) exhausts
         newExhausts Thrust       = map mkExhaust (take 15 randomList)
                                    ++ take 15 exhausts
-            where
-                randomList       = randoms rndGen :: [Int]
+            where                
                 mkExhaust n      = Exhaust (position newPlayer) ((fromIntegral
                                    (n `mod` 499) / 50) `mulSV` (argV (direction
                                    newPlayer) `rotateV` unitVectorAtAngle
@@ -42,7 +48,7 @@ timeHandler time world@World{..} = world {
                 getNum a         = (fromIntegral (a `mod` 1009) / 2016 + 3/4)
                                    * pi
         newPowerUps              = powerUps -- TODO add random powerUps
-        newPlayer                = update player
+        newPlayer                = update player -- TODO prevent outofbounds exception
         update p@Player{..}      = updatePosition $ accelerate movementAction
                                              $ rotate rotateAction player
             where

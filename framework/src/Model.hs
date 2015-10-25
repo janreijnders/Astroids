@@ -75,10 +75,10 @@ deceleration :: Float
 deceleration = 0.01
 -- In radians
 rotationSpeed :: Float
-rotationSpeed = 1/45 * pi
+rotationSpeed = 1/32 * pi
 -- In unit lengths per frame
 projectileSpeed :: Float
-projectileSpeed = 5.0
+projectileSpeed = 8.0
 -- In unit lengths per frame
 defaultEnemySpeed :: Float
 defaultEnemySpeed = 3.0
