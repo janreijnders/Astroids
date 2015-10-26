@@ -33,10 +33,8 @@ draw horizontalResolution verticalResolution world@(World{..})
             drawEntity p@Player{..} = drawEntity' p playerModel
             drawEntity e@Enemy{..}  = drawEntity' e (getEnemyModel enemyType)
                 where
-                    getEnemyModel AsteroidSmall = asteroidModel
-                    getEnemyModel AsteroidBig   = scale 2 2 asteroidModel
-                    getEnemyModel AlienSmall    = alienModel
-                    getEnemyModel AlienBig      = scale 2 2 alienModel
+                    getEnemyModel Asteroid = asteroidModel
+                    getEnemyModel Alien    = alienModel
             drawEntity p@Projectile{..} = drawEntity' p projectileModel
             drawEntity e@Exhaust{..}    = drawEntity' e exhaustModel
             drawEntity p@PowerUp{..}    = drawEntity' p powerUpModel

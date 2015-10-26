@@ -63,7 +63,7 @@ data Entity         = Player {
         direction   :: Vector
     }
 
-data EnemyType = AsteroidSmall | AsteroidBig | AlienSmall | AlienBig
+data EnemyType = Asteroid | Alien
     deriving (Bounded, Enum, Eq, Ord)
 
 instance Random EnemyType where
