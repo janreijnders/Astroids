@@ -24,8 +24,8 @@ main :: IO ()
 main = do
     args <- getArgs
     time <- round <$> getPOSIXTime
-    let initial'        = initial time
     let (w, h, display) = chooseDisplay args
+    let initial'        = initial time w h
     let background      = black
     let fps             = 60
     play display background fps initial' (draw w h) eventHandler timeHandler

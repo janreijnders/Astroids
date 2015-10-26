@@ -14,8 +14,8 @@ import Model
 -- | Drawing
 
 playerModel     = color white $ polygon [(0, 10), (-5, -5), (5, -5)] -- TODO improve model
-asteroidModel   = color white $ polygon [(0, 0), (0, 5), (5, 5), (5, 0)] -- TODO improve model
-alienModel      = color white $ polygon [(0, 0), (0, 5), (5, 5), (5, 0)] -- TODO improve model
+asteroidModel   = color white $ polygon [(0, 0), (0, 15), (15, 15), (15, 0)] -- TODO improve model
+alienModel      = color white $ polygon [(0, 5), (-5, -5), (5, -5)] -- TODO improve model
 projectileModel = color white $ polygon [(0, 0), (0, 2), (2, 2), (2, 0)] -- TODO improve model
 exhaustModel    = color white $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] -- TODO improve model
 powerUpModel    = Blank -- TODO add powerUp model
@@ -33,10 +33,10 @@ draw horizontalResolution verticalResolution world@(World{..})
             drawEntity p@Player{..} = drawEntity' p playerModel
             drawEntity e@Enemy{..}  = drawEntity' e (getEnemyModel enemyType)
                 where
-                    getEnemyModel asteroidSmall = asteroidModel
-                    getEnemyModel asteroidBig   = scale 2 2 asteroidModel
-                    getEnemyModel alienSmall    = alienModel
-                    getEnemyModel alienBig      = scale 2 2 alienModel
+                    getEnemyModel AsteroidSmall = asteroidModel
+                    getEnemyModel AsteroidBig   = scale 2 2 asteroidModel
+                    getEnemyModel AlienSmall    = alienModel
+                    getEnemyModel AlienBig      = scale 2 2 alienModel
             drawEntity p@Projectile{..} = drawEntity' p projectileModel
             drawEntity e@Exhaust{..}    = drawEntity' e exhaustModel
             drawEntity p@PowerUp{..}    = drawEntity' p powerUpModel

@@ -6,7 +6,6 @@ module Controller.Time (
 ) where
 
 import Data.List
-
 import Graphics.Gloss
 import Graphics.Gloss.Geometry.Line
 import Graphics.Gloss.Geometry.Angle
@@ -28,10 +27,32 @@ timeHandler time world@World{..} = world {
     powerUps    = map updatePosition newPowerUps,
     shootAction = DontShoot }
     where
-        randomList               = randoms rndGen :: [Int]
-        newEnemies               = enemies -- TODO add random enemies and detect and delete hit enemies
-        newProjectiles DontShoot = projectiles --TODO make some kind of garbage collector for projectiles that are off the screen
-        newProjectiles Shoot     = Projectile pos spd dir : take 999 projectiles
+        randomList         = randoms rndGen :: [Int]
+        rndNum             = fst $ random rndGen :: Int
+        rndGens            = split rndGen
+        inBounds entity    = f $ position entity
+            where f (x, y) = if x > resolutionX || x < (- resolutionX) ||
+                                y > resolutionY || y < (- resolutionY) then
+                                False else True
+        newEnemies | rndNum `mod` 60 /= 0 =              filter keep enemies
+                   | otherwise = Enemy pos spd dir typ : filter keep enemies
+            where
+                keep    enemy = isAlive enemy && inBounds enemy
+                isAlive enemy = True -- TODO detect if enemy is hit 
+                pos | fst $ random $ fst rndGens =
+                                   (rndNegative * resolutionX / 2, fst $ randomR
+                                   (- resolutionY / 2, resolutionY / 2) rndGen)
+                    | otherwise = (fst $ randomR (- resolutionX / 2, resolutionX
+                                  / 2) rndGen, rndNegative * resolutionY / 2)
+                    where rndNegative = if fst $ random $ snd rndGens then -1
+                                                                      else  1
+                spd = (fst $ randomR (minEnemySpeed, maxEnemySpeed) rndGen)
+                      `mulSV` dir
+                dir = normalizeV $ position player - pos
+                typ = fst $ random rndGen -- TODO make weigthed so aliens are more rare
+        newProjectiles DontShoot = filter inBounds projectiles
+        newProjectiles Shoot     = Projectile pos spd dir :
+                                   filter inBounds projectiles
             where
                 pos = position newPlayer
                 spd = (speed newPlayer) + projectileSpeed `mulSV`
@@ -41,7 +62,7 @@ timeHandler time world@World{..} = world {
         newExhausts Thrust       = map mkExhaust (take 15 randomList)
                                    ++ take 15 exhausts
             where                
-                mkExhaust n      = Exhaust (position newPlayer) ((fromIntegral
+                mkExhaust n      = Exhaust (position newPlayer) ((fromIntegral -- TODO clean this
                                    (n `mod` 499) / 50) `mulSV` (argV (direction
                                    newPlayer) `rotateV` unitVectorAtAngle
                                    (getNum n))) (0, 0)

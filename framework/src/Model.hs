@@ -14,6 +14,8 @@ data World = World {
         rotateAction     :: RotateAction,
         movementAction   :: MovementAction,
         shootAction      :: ShootAction,
+        resolutionX      :: Float,
+        resolutionY      :: Float,
         player           :: Entity,
         enemies          :: [Entity],
         projectiles      :: [Entity],
@@ -64,6 +66,11 @@ data Entity         = Player {
 data EnemyType = AsteroidSmall | AsteroidBig | AlienSmall | AlienBig
     deriving (Bounded, Enum, Eq, Ord)
 
+instance Random EnemyType where
+    randomR (l, h) g = f (randomR (fromEnum l, fromEnum h) g)
+        where f (enemyType, rng) = (toEnum enemyType, rng)
+    random           = randomR (minBound, maxBound)
+    
 -- In unit lengths per frame.
 acceleration :: Float
 acceleration = 0.09
@@ -80,15 +87,19 @@ rotationSpeed = 1/32 * pi
 projectileSpeed :: Float
 projectileSpeed = 8.0
 -- In unit lengths per frame
-defaultEnemySpeed :: Float
-defaultEnemySpeed = 3.0
+minEnemySpeed :: Float
+minEnemySpeed = 1.0
+-- In unit lengths per frame
+maxEnemySpeed :: Float
+maxEnemySpeed = 5.0
 
-initial :: Int -> World
-initial seed = World {
+initial :: Int -> Float -> Float -> World
+initial seed x y = World {
             rndGen = mkStdGen seed, rotateAction = NoRotation,
             movementAction = NoMovement, shootAction = DontShoot,
-            player = defaultPlayer, enemies = [], projectiles = [],
-            exhausts = [], powerUps = [], gameState = defaultGameState }
+            resolutionX = x, resolutionY = y, player = defaultPlayer,
+            enemies = [], projectiles = [], exhausts = [], powerUps = [],
+            gameState = defaultGameState }
     where
         defaultPlayer    = Player {
                         position = (0, 0), speed = (0, 0), direction = (0, 1)}
