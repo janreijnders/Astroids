@@ -31,7 +31,8 @@ draw horizontalResolution verticalResolution world@(World{..})
                 drawEntity player]
         where
             drawEntity p@Player{..} = drawEntity' p playerModel
-            drawEntity e@Enemy{..}  = drawEntity' e (scale enemyScale enemyScale (getEnemyModel enemyType))
+            drawEntity e@Enemy{..}  = drawEntity' e (scale enemyScale enemyScale
+                                      (getEnemyModel enemyType))
                 where
                     getEnemyModel Asteroid = asteroidModel
                     getEnemyModel Alien    = scale 0.05 0.05 alienModel
@@ -40,4 +41,4 @@ draw horizontalResolution verticalResolution world@(World{..})
             drawEntity p@PowerUp{..}    = drawEntity' p powerUpModel
             drawEntity' entity model    = uncurry translate (position entity) $
                                           rotate (radToDeg (1/2 * pi -
-                                          (argV $ direction entity))) model
+                                          argV (direction entity))) model

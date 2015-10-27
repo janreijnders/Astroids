@@ -19,7 +19,7 @@ import System.Random
 import Model
 
 -- | Time handling
-
+-- TODO make dead enemies explode, detect if the player gets hit, improve enemy hitboxes and keep score
 timeHandler :: Float -> World -> World
 timeHandler time world@World{..} = world {
     rndGen      = snd $ next rndGen,
@@ -39,12 +39,10 @@ timeHandler time world@World{..} = world {
         posNP           = position newPlayer
         spawnEnemy      = fst (randomR (0, spawnChance) rndGen) == 0
         inBounds entity = f $ position entity
-            where f (x, y) = if x > resolutionX || x < (- resolutionX) ||
-                                y > resolutionY || y < (- resolutionY) then
-                                False else True
-        filterHit [] = []
-        filterHit (x:xs) = if or' $ map (\p -> (p `inside` x) && (shooter p /= entityID x)) projectiles then
-                           filterHit xs else x : filterHit xs        
+            where f (x, y) = not (x > resolutionX || x < (- resolutionX) ||
+                                  y > resolutionY || y < (- resolutionY))
+        enemyProjectileList = [(e, p) | e <- enemies, p <- projectiles,
+                              (p `inside` e) && (shooter p /= entityID e)]
         inside p e = pointInBox (position p) topLeft bottomRight
                     where
                         topLeft     = ep + es
@@ -52,9 +50,11 @@ timeHandler time world@World{..} = world {
                         ep          = position e
                         es          = (enemyScale e, enemyScale e)
         newEnemies | spawnEnemy = Enemy pos spd dir typ scl nextID :
-                                  map updateAlien (filterHit enemies)
-                   | otherwise  = map updateAlien (filterHit enemies)
+                                  map updateAlien newEnemies'
+                   | otherwise  = map updateAlien newEnemies'
             where
+                newEnemies' = (filter (\e -> not $ elem e
+                              (map fst enemyProjectileList)) enemies)
                 updateAlien e@Enemy{..} | enemyType == Asteroid = e
                                         | enemyType == Alien    = e {
                                    direction = normalizeV $ posNP - position,
@@ -66,21 +66,23 @@ timeHandler time world@World{..} = world {
                                   / 2) rndGen, rndNegative * resolutionY / 2)
                     where rndNegative = if fst $ random $ snd rndGens then -1
                                                                       else  1
-                spd = (fst $ randomR (minEnemySpeed, maxEnemySpeed) rndGen)
+                spd = fst (randomR (minEnemySpeed, maxEnemySpeed) rndGen)
                       `mulSV` dir
                 dir = normalizeV $ position newPlayer - pos
                 typ = fst $ random rndGen -- TODO make weigthed so aliens are more rare
                 scl = fst $ randomR (minEnemyScale, maxEnemyScale) rndGen
-        newProjectiles DontShoot = filter inBounds projectiles ++ enemyProjecs
-        newProjectiles Shoot     = Projectile posNP spd dir 0 :
-                                   filter inBounds projectiles ++ enemyProjecs
+        newProjectiles' = filter inBounds (filter (\p -> not $ elem p (map snd
+                          enemyProjectileList)) projectiles) ++ enemyProjecs
+        newProjectiles DontShoot =                              newProjectiles'
+        newProjectiles Shoot     = Projectile posNP spd dir 0 : newProjectiles'
             where
+                
                 spd = speed newPlayer + projectileSpeed `mulSV` dir
                 dir = direction newPlayer
         enemyProjecs = mapMaybe mkProjectile enemies
-        mkProjectile e = if enemyType e == Alien && rndNum * truncate
-                         (magV (position e)) `mod` 480 == 0 then Just $
-                         Projectile pos' spd' dir' (entityID e)   else Nothing
+        mkProjectile e = if enemyType e == Alien && (entityID e * rndNum) `mod`
+                         shootChance == 0 then Just $
+                         Projectile pos' spd' dir' (entityID e) else Nothing
             where
                 pos' = position e
                 spd' = speed e + projectileSpeed `mulSV` dir'
@@ -106,7 +108,7 @@ timeHandler time world@World{..} = world {
                              else (1 - deceleration) `mulSV` speed}
                 accelerate Thrust     p@Player{..} = p
                     {speed = (1 - deceleration) `mulSV` (speed +
-                    (mulSV acceleration $ unitVectorAtAngle $ argV direction))}
+                    mulSV acceleration (unitVectorAtAngle $ argV direction))}
                 rotate NoRotation     p            = p
                 rotate RotateLeft     p@Player{..} = p
                     {direction =    rotationSpeed  `rotateV` direction}

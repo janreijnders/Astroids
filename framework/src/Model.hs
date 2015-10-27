@@ -66,7 +66,8 @@ data Entity         = Player {
         position    :: Point,
         direction   :: Vector
     }
-    
+    deriving (Eq)
+
 data EnemyType = Asteroid | Alien
     deriving (Bounded, Enum, Eq, Ord)
 
@@ -105,6 +106,9 @@ maxEnemyScale = 100.0
 -- There is a chance of 1 to this value for an enemy to spawn each frame
 spawnChance :: Int
 spawnChance = 60
+-- There is a chance of 1 to this value for each enemy to shoot each frame
+shootChance :: Int
+shootChance = 360
 
 initial :: Int -> Float -> Float -> World
 initial seed x y = World {
@@ -115,6 +119,5 @@ initial seed x y = World {
             gameState = defaultGameState, nextID = 1 }
     where
         defaultPlayer    = Player {
-                        position = (0, 0), speed = (0, 0), direction = (0, 1)}
-        defaultGameState = GameState {
-                        score = 0, scoreMultiplier = 0}
+                          position = (0, 0), speed = (0, 0), direction = (0, 1)}
+        defaultGameState = GameState {score = 0, scoreMultiplier = 0}
