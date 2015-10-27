@@ -5,11 +5,14 @@ module Controller.Time (
     timeHandler
 ) where
 
+import Debug.Trace
+
 import Data.List
 import Graphics.Gloss
 import Graphics.Gloss.Geometry.Line
 import Graphics.Gloss.Geometry.Angle
 import Graphics.Gloss.Data.Vector
+import Graphics.Gloss.Data.Point (pointInBox)
 import Data.Maybe
 import System.Random
 
@@ -30,40 +33,33 @@ timeHandler time world@World{..} = world {
         randomList         = randomRs (0, 1000) rndGen :: [Int]
         rndNum             = fst $ random rndGen :: Int
         rndGens            = split rndGen
+        or' [] = True
+        or' xs = or xs
         posNP              = position newPlayer
         inBounds entity    = f $ position entity
             where f (x, y) = if x > resolutionX || x < (- resolutionX) ||
                                 y > resolutionY || y < (- resolutionY) then
                                 False else True
-<<<<<<< HEAD
-        newEnemies | rndNum `mod` 60 /= 0 =                  filter keep enemies
-                   | otherwise = Enemy pos spd dir typ scl : filter keep enemies
-            where
-                keep    enemy = (isAlive enemy) && (inBounds enemy)
-                isAlive :: Entity -> Bool
-                isAlive enemy = or (map (\p -> p `inside` enemy) projectiles)
-                inside :: Entity -> Entity -> Bool
-                inside p e    = fst (position p) < fst (position e) + enemyScale e &&
-                                fst (position p) > fst (position e) - enemyScale e &&
-                                snd (position p) < snd (position e) + enemyScale e &&
-                                snd (position p) > snd (position e) - enemyScale e
-=======
+        enemyProjectileList = [(e, p) | e <- filter inBounds enemies, p <- filter inBounds projectiles, not $ p `inside` e]
+        inside p e = pointInBox (position p) topLeft bottomRight
+                    where
+                        topLeft     = ep + es
+                        bottomRight = ep - es
+                        ep          = position e
+                        es          = (enemyScale e, enemyScale e)
         newEnemies | rndNum `mod` 60 /= 0 = map updateAlien 
-                                            (filter keep enemies)
-                   | otherwise            = Enemy pos spd dir typ :
+                                            (map fst enemyProjectileList)
+                   | otherwise            = Enemy pos spd dir typ scl :
                                             map updateAlien
-                                            (filter keep enemies)
+                                            (map fst enemyProjectileList)
             where
                 updateAlien e@Enemy{..} | enemyType == Asteroid = e
-                                        | enemyType == Alien    = e {direction =
-                                       normalizeV $ posNP - position,
-                                       speed = speed + 0.0001 `mulSV` direction}
-                keep    enemy = isAlive enemy && inBounds enemy
-                isAlive enemy = True -- TODO detect if enemy is hit 
->>>>>>> refs/remotes/origin/master
+                                        | enemyType == Alien    = e {
+                                   direction = normalizeV $ posNP - position,
+                                   speed     = speed + 0.0001 `mulSV` direction}
                 pos | fst $ random $ fst rndGens =
-                                   (rndNegative * resolutionX / 2, fst $ randomR
-                                   (- resolutionY / 2, resolutionY / 2) rndGen)
+                                  (rndNegative * resolutionX / 2, fst $ randomR
+                                  (- resolutionY / 2, resolutionY / 2) rndGen)
                     | otherwise = (fst $ randomR (- resolutionX / 2, resolutionX
                                   / 2) rndGen, rndNegative * resolutionY / 2)
                     where rndNegative = if fst $ random $ snd rndGens then -1
@@ -72,22 +68,16 @@ timeHandler time world@World{..} = world {
                       `mulSV` dir
                 dir = normalizeV $ position newPlayer - pos
                 typ = fst $ random rndGen -- TODO make weigthed so aliens are more rare
-<<<<<<< HEAD
                 scl = fst $ randomR (minEnemyScale, maxEnemyScale) rndGen
-        newProjectiles DontShoot = filter inBounds projectiles
-        newProjectiles Shoot     = Projectile pos spd dir :
-                                   filter inBounds projectiles
-=======
         newProjectiles DontShoot = filter inBounds projectiles ++ enemyProjecs
         newProjectiles Shoot     = Projectile posNP spd dir :
                                    filter inBounds projectiles ++ enemyProjecs
->>>>>>> refs/remotes/origin/master
             where
                 spd = speed newPlayer + projectileSpeed `mulSV` dir
                 dir = direction newPlayer
         enemyProjecs = mapMaybe mkProjectile enemies
         mkProjectile e = if enemyType e == Alien && rndNum * truncate
-                         (magV (position e)) `mod` 300 == 0 then Just $
+                         (magV (position e)) `mod` 480 == 0 then Just $
                          Projectile pos' spd' dir' else Nothing
             where
                 pos' = position e
