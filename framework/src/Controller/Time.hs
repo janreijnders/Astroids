@@ -28,31 +28,32 @@ timeHandler time world@World{..} = world {
     projectiles = map updatePosition $ newProjectiles shootAction,
     exhausts    = map updatePosition $ newExhausts movementAction,
     powerUps    = map updatePosition newPowerUps,
-    shootAction = DontShoot }
+    shootAction = DontShoot,
+    nextID      = if spawnEnemy then nextID + 1 else nextID }
     where
-        randomList         = randomRs (0, 1000) rndGen :: [Int]
-        rndNum             = fst $ random rndGen :: Int
-        rndGens            = split rndGen
-        or' [] = True
-        or' xs = or xs
-        posNP              = position newPlayer
-        inBounds entity    = f $ position entity
+        randomList      = randomRs (0, 1000) rndGen :: [Int]
+        rndNum          = fst $ random rndGen :: Int
+        rndGens         = split rndGen
+        or' []          = False
+        or' xs          = or xs
+        posNP           = position newPlayer
+        spawnEnemy      = fst (randomR (0, spawnChance) rndGen) == 0
+        inBounds entity = f $ position entity
             where f (x, y) = if x > resolutionX || x < (- resolutionX) ||
                                 y > resolutionY || y < (- resolutionY) then
                                 False else True
-        newEnemies' = filter (\e -> or' $ map (\p -> not $ p `inside` e) projectiles) enemies
-        
+        filterHit [] = []
+        filterHit (x:xs) = if or' $ map (\p -> (p `inside` x) && (shooter p /= entityID x)) projectiles then
+                           filterHit xs else x : filterHit xs        
         inside p e = pointInBox (position p) topLeft bottomRight
                     where
                         topLeft     = ep + es
                         bottomRight = ep - es
                         ep          = position e
-                        es          = (enemyScale e / 2, enemyScale e / 2)
-        newEnemies | rndNum `mod` 60 /= 0 = map updateAlien 
-                                            newEnemies'
-                   | otherwise            = Enemy pos spd dir typ scl :
-                                            map updateAlien
-                                            newEnemies'
+                        es          = (enemyScale e, enemyScale e)
+        newEnemies | spawnEnemy = Enemy pos spd dir typ scl nextID :
+                                  map updateAlien (filterHit enemies)
+                   | otherwise  = map updateAlien (filterHit enemies)
             where
                 updateAlien e@Enemy{..} | enemyType == Asteroid = e
                                         | enemyType == Alien    = e {
@@ -71,7 +72,7 @@ timeHandler time world@World{..} = world {
                 typ = fst $ random rndGen -- TODO make weigthed so aliens are more rare
                 scl = fst $ randomR (minEnemyScale, maxEnemyScale) rndGen
         newProjectiles DontShoot = filter inBounds projectiles ++ enemyProjecs
-        newProjectiles Shoot     = Projectile posNP spd dir :
+        newProjectiles Shoot     = Projectile posNP spd dir 0 :
                                    filter inBounds projectiles ++ enemyProjecs
             where
                 spd = speed newPlayer + projectileSpeed `mulSV` dir
@@ -79,7 +80,7 @@ timeHandler time world@World{..} = world {
         enemyProjecs = mapMaybe mkProjectile enemies
         mkProjectile e = if enemyType e == Alien && rndNum * truncate
                          (magV (position e)) `mod` 480 == 0 then Just $
-                         Projectile pos' spd' dir' else Nothing
+                         Projectile pos' spd' dir' (entityID e)   else Nothing
             where
                 pos' = position e
                 spd' = speed e + projectileSpeed `mulSV` dir'

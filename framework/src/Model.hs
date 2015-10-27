@@ -21,7 +21,8 @@ data World = World {
         projectiles      :: [Entity],
         exhausts         :: [Entity],
         powerUps         :: [Entity],
-        gameState        :: GameState
+        gameState        :: GameState,
+        nextID           :: Int
     }
     
 data RotateAction   = NoRotation | RotateLeft | RotateRight
@@ -47,12 +48,14 @@ data Entity         = Player {
         speed       :: Vector,
         direction   :: Vector,
         enemyType   :: EnemyType,
-        enemyScale  :: Float
+        enemyScale  :: Float,
+        entityID    :: Int
     }
                     | Projectile {
         position    :: Point,
         speed       :: Vector,
-        direction   :: Vector
+        direction   :: Vector,
+        shooter     :: Int
     }
                     | Exhaust {
         position    :: Point,
@@ -63,7 +66,7 @@ data Entity         = Player {
         position    :: Point,
         direction   :: Vector
     }
-
+    
 data EnemyType = Asteroid | Alien
     deriving (Bounded, Enum, Eq, Ord)
 
@@ -99,6 +102,9 @@ minEnemyScale = 10.0
 -- In unit lengths
 maxEnemyScale :: Float
 maxEnemyScale = 100.0
+-- There is a chance of 1 to this value for an enemy to spawn each frame
+spawnChance :: Int
+spawnChance = 60
 
 initial :: Int -> Float -> Float -> World
 initial seed x y = World {
@@ -106,7 +112,7 @@ initial seed x y = World {
             movementAction = NoMovement, shootAction = DontShoot,
             resolutionX = x, resolutionY = y, player = defaultPlayer,
             enemies = [], projectiles = [], exhausts = [], powerUps = [],
-            gameState = defaultGameState }
+            gameState = defaultGameState, nextID = 1 }
     where
         defaultPlayer    = Player {
                         position = (0, 0), speed = (0, 0), direction = (0, 1)}
