@@ -34,11 +34,17 @@ timeHandler time world@World{..} = world {
             where f (x, y) = if x > resolutionX || x < (- resolutionX) ||
                                 y > resolutionY || y < (- resolutionY) then
                                 False else True
-        newEnemies | rndNum `mod` 60 /= 0 =              filter keep enemies
-                   | otherwise = Enemy pos spd dir typ : filter keep enemies
+        newEnemies | rndNum `mod` 60 /= 0 =                  filter keep enemies
+                   | otherwise = Enemy pos spd dir typ scl : filter keep enemies
             where
-                keep    enemy = isAlive enemy && inBounds enemy
-                isAlive enemy = True -- TODO detect if enemy is hit 
+                keep    enemy = (isAlive enemy) && (inBounds enemy)
+                isAlive :: Entity -> Bool
+                isAlive enemy = or (map (\p -> p `inside` enemy) projectiles)
+                inside :: Entity -> Entity -> Bool
+                inside p e    = fst (position p) < fst (position e) + enemyScale e &&
+                                fst (position p) > fst (position e) - enemyScale e &&
+                                snd (position p) < snd (position e) + enemyScale e &&
+                                snd (position p) > snd (position e) - enemyScale e
                 pos | fst $ random $ fst rndGens =
                                    (rndNegative * resolutionX / 2, fst $ randomR
                                    (- resolutionY / 2, resolutionY / 2) rndGen)
@@ -50,6 +56,7 @@ timeHandler time world@World{..} = world {
                       `mulSV` dir
                 dir = normalizeV $ position player - pos
                 typ = fst $ random rndGen -- TODO make weigthed so aliens are more rare
+                scl = fst $ randomR (minEnemyScale, maxEnemyScale) rndGen
         newProjectiles DontShoot = filter inBounds projectiles
         newProjectiles Shoot     = Projectile pos spd dir :
                                    filter inBounds projectiles

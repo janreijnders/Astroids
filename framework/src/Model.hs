@@ -46,7 +46,8 @@ data Entity         = Player {
         position    :: Point,
         speed       :: Vector,
         direction   :: Vector,
-        enemyType   :: EnemyType        
+        enemyType   :: EnemyType,
+        enemyScale  :: Float
     }
                     | Projectile {
         position    :: Point,
@@ -63,7 +64,7 @@ data Entity         = Player {
         direction   :: Vector
     }
 
-data EnemyType = AsteroidSmall | AsteroidBig | AlienSmall | AlienBig
+data EnemyType = Asteroid | Alien
     deriving (Bounded, Enum, Eq, Ord)
 
 instance Random EnemyType where
@@ -92,6 +93,12 @@ minEnemySpeed = 1.0
 -- In unit lengths per frame
 maxEnemySpeed :: Float
 maxEnemySpeed = 5.0
+-- In unit lengths
+minEnemyScale :: Float
+minEnemyScale = 10.0
+-- In unit lengths
+maxEnemyScale :: Float
+maxEnemyScale = 100.0
 
 initial :: Int -> Float -> Float -> World
 initial seed x y = World {
