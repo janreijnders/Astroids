@@ -40,18 +40,19 @@ timeHandler time world@World{..} = world {
             where f (x, y) = if x > resolutionX || x < (- resolutionX) ||
                                 y > resolutionY || y < (- resolutionY) then
                                 False else True
-        enemyProjectileList = [(e, p) | e <- filter inBounds enemies, p <- filter inBounds projectiles, not $ p `inside` e]
+        newEnemies' = filter (\e -> or' $ map (\p -> not $ p `inside` e) projectiles) enemies
+        
         inside p e = pointInBox (position p) topLeft bottomRight
                     where
                         topLeft     = ep + es
                         bottomRight = ep - es
                         ep          = position e
-                        es          = (enemyScale e, enemyScale e)
+                        es          = (enemyScale e / 2, enemyScale e / 2)
         newEnemies | rndNum `mod` 60 /= 0 = map updateAlien 
-                                            (map fst enemyProjectileList)
+                                            newEnemies'
                    | otherwise            = Enemy pos spd dir typ scl :
                                             map updateAlien
-                                            (map fst enemyProjectileList)
+                                            newEnemies'
             where
                 updateAlien e@Enemy{..} | enemyType == Asteroid = e
                                         | enemyType == Alien    = e {
