@@ -44,9 +44,12 @@ timeHandler time world@World{..}
     powerUps    = newPowerUps,
     explosions  = map updatePosition newExplosions,
     shootAction = DontShoot,
-    nextID      = if spawnEnemy then nextID + 1 else nextID }
+    nextID      = if spawnEnemy then nextID + 1 else nextID,
+    stars       = map updateStar newStars}
     where
-        playerIsHit     = (or' $ map (player `inside`) enemies) || (or' $ map (\p -> pointInBox (position p) (position player + (4, 4)) (position player - (4, 4))) projectiles)
+        playerIsHit     = (or' $ map (player `inside`) enemies) || (or' $ map
+                          (\p -> pointInBox (position p) (position player +
+                          (4, 4)) (position player - (4, 4))) projectiles)
         randomList      = randomRs (0, 1000) rndGen :: [Int]
         rndNum          = fst $ random rndGen :: Int
         rndGens         = split rndGen
@@ -56,8 +59,12 @@ timeHandler time world@World{..}
         spawnEnemy      = fst (randomR (1, spawnChance)   rndGen) == 1
         spawnPowerUp    = fst (randomR (1, powerUpChance) rndGen) == 1
         inBounds entity = f $ position entity
-            where f (x, y) = not (x > resolutionX / 2 || x < (- resolutionX / 2) ||
-                                  y > resolutionY / 2 || y < (- resolutionY / 2))
+            where f (x, y) =
+                not (x > resolutionX / 2 || x < (- resolutionX / 2) ||
+                     y > resolutionY / 2 || y < (- resolutionY / 2))
+        inBoundsStar (Vector3 x y _) =
+                not (x > resolutionX / 2 || x < (- resolutionX / 2) ||
+                     y > resolutionY / 2 || y < (- resolutionY / 2))
         enemyProjectileList = [(e, p) | e <- enemies, p <- projectiles,
                               (p `inside` e) && (shooter p /= entityID e)]
         inside p e = pointInBox (position p) topLeft bottomRight
@@ -66,6 +73,13 @@ timeHandler time world@World{..}
                         bottomRight = ep - es
                         ep          = position e
                         es          = (enemyScale e, enemyScale e)
+        newStars = filtered ++ replacements
+                  where
+                    filtered     = filter inBoundsStar stars
+                    replacements = take (1000 - length filtered) (randomRs
+                                   ((Vector3 (- resolutionX / 2) (- resolutionY
+                                   / 2) 1000), (Vector3 (- resolutionX/2)
+                                   (resolutionY/2) 10000)) rndGen)                    
         newEnemies | spawnEnemy = Enemy pos spd dir typ scl nextID :
                                   map updateAlien newEnemies'
                    | otherwise  = map updateAlien newEnemies'
@@ -117,7 +131,10 @@ timeHandler time world@World{..}
         newPowerUps   | spawnPowerUp = mkPowerUp : powerUps
                       | otherwise    =             powerUps
             where
-                mkPowerUp = PowerUp (fst $ randomR (-resolutionX/2, resolutionX/2) (fst rndGens), fst $ randomR (-resolutionY/2, resolutionY/2) (snd rndGens)) (0, 0)
+                mkPowerUp = PowerUp (fst $ randomR (- resolutionX / 2,
+                            resolutionX / 2) (fst rndGens), fst $ randomR
+                            (- resolutionY / 2, resolutionY / 2) (snd rndGens))
+                            (0, 0)
         newExplosions = concatMap (mkExplosion . fst) enemyProjectileList
                         ++ filter inBounds explosions
             where
@@ -130,13 +147,17 @@ timeHandler time world@World{..}
                             where
                                 spd = spd' `mulSV` dir
                                 dir = unitVectorAtAngle dir'
-        playerExplosion = map f (zip (take 2000 (randomRs (1, 10) (fst rndGens))) (randomRs (0, 2 * pi) (snd rndGens)))
+        playerExplosion = map f (zip (take 2000 (randomRs (1, 10) (fst rndGens))
+                          ) (randomRs (0, 2 * pi) (snd rndGens)))
                     where
-                        f (spd', dir') = Exhaust (position player) (spd + speed player) dir
+                        f (spd', dir') = Exhaust (position player) (spd + speed
+                                         player) dir
                             where
                                 spd = spd' `mulSV` dir
                                 dir = unitVectorAtAngle dir'
-        newPlayer           = if not $ inBounds newPlayer' then rotate rotateAction $ player {speed = (0, 0)} else newPlayer'
+        newPlayer           = if not $ inBounds newPlayer'
+                              then rotate rotateAction $ player {speed = (0, 0)}
+                              else newPlayer'
         newPlayer'          = update player
         update p@Player{..} = updatePosition $ accelerate movementAction
                               $ rotate rotateAction p
@@ -151,6 +172,8 @@ timeHandler time world@World{..}
             {direction =    rotationSpeed  `rotateV` direction}
         rotate RotateRight    p@Player{..} = p
             {direction = (- rotationSpeed) `rotateV` direction}
-
         updatePosition e = e {position = newPosition}
-            where newPosition = speed e + position e
+            where newPosition = speed e + position e       
+        updateStar (Vector3 x y z) = (Vector3 updatedX y z)
+            where 
+                updatedX = x + 2 * (scrollDistance / (2 * z)) * (horizon - z)

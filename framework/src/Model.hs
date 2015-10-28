@@ -23,7 +23,8 @@ data World = World {
         powerUps         :: [Entity],
         explosions       :: [Entity],
         gameState        :: GameState,
-        nextID           :: Int
+        nextID           :: Int,
+        stars            :: [Vector3]
     }
     
 data RotateAction   = NoRotation | RotateLeft | RotateRight
@@ -32,7 +33,8 @@ data MovementAction = NoMovement | Thrust
     deriving (Eq)
 data ShootAction    = Shoot      | DontShoot
     deriving (Eq)
-
+data Vector3 = Vector3 Float Float Float
+    deriving (Show)
 data GameState = GameState {
         score           :: Int,
         scoreMultiplier :: Int
@@ -73,6 +75,15 @@ data Entity         = Player {
 data EnemyType = Asteroid | Alien
     deriving (Bounded, Enum, Eq, Ord)
 
+instance Random Vector3 where 
+    randomR (Vector3 lx ly lz, Vector3 hx hy hz) g =
+        (Vector3 (fst int1) (fst int2) (fst int3), snd int3)
+        where 
+            int1 = randomR (lx, hx) g
+            int2 = randomR (ly, hy) (snd int1)
+            int3 = randomR (lz, hz) (snd int2)
+    random = randomR (Vector3 0 0 0, Vector3 1 1 1)
+    
 instance Random EnemyType where
     randomR (l, h) g = f (randomR (fromEnum l, fromEnum h) g)
         where f (enemyType, rng) = (toEnum enemyType, rng)
@@ -114,6 +125,9 @@ powerUpChance = 180
 -- There is a chance of 1 to this value for each enemy to shoot each frame
 shootChance :: Int
 shootChance = 360
+-- In unit lengths
+scrollDistance = 0.001 :: Float
+horizon = 1000000 :: Float
 
 initial :: Int -> Float -> Float -> World
 initial seed x y = World {
@@ -121,8 +135,11 @@ initial seed x y = World {
             movementAction = NoMovement, shootAction = DontShoot,
             resolutionX = x, resolutionY = y, player = defaultPlayer,
             enemies = [], projectiles = [], exhausts = [], powerUps = [],
-            explosions = [], gameState = defaultGameState, nextID = 1 }
+            explosions = [], gameState = defaultGameState, nextID = 1,
+            stars = randomStars }
     where
         defaultPlayer    = Player { position  = (0, 0), speed = (0, 0),
                                     direction = (0, 1), alive = True  }
         defaultGameState = GameState {score = 0, scoreMultiplier = 0}
+        randomStars = take 1000 (randomRs ((Vector3 (- x / 2) (- y / 2) 1000),
+                      (Vector3 (x / 2) (y / 2) 10000)) (mkStdGen seed))

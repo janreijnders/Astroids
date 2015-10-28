@@ -19,22 +19,24 @@ alienModel      = color white $ polygon [(0, 5), (-5, -5), (5, -5)] -- TODO impr
 projectileModel = color white $ polygon [(0, 0), (0, 2), (2, 2), (2, 0)] -- TODO improve model
 exhaustModel    = color white $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] -- TODO improve model
 powerUpModel    = color white $ polygon [(-10, -10), (-10, 10), (10, 10), (10, -10)] -- TODO add powerUp model
+starModel       = color white $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] -- TODO improve model
 ui              = Blank -- TODO add score and other stuff
-background      = Blank -- TODO add stars with paralax
 
 draw :: Float -> Float -> World -> Picture
 draw horizontalResolution verticalResolution world@(World{..})
-    = pictures [background, ui,
+    = pictures [ui,
                 pictures $ map drawEntity enemies,
                 pictures $ map drawEntity projectiles,
                 pictures $ map drawEntity exhausts,
                 pictures $ map drawEntity explosions,
                 pictures $ map drawEntity powerUps,
+                pictures $ map drawStar stars,
                 drawEntity player]
         where
-            drawEntity p@Player{..} = if alive then drawEntity' p playerModel else Blank
-            drawEntity e@Enemy{..}  = drawEntity' e (scale (enemyScale / 2) (enemyScale / 2)
-                                      (getEnemyModel enemyType))
+            drawEntity p@Player{..} = if alive then drawEntity' p playerModel
+                                               else Blank
+            drawEntity e@Enemy{..}  = drawEntity' e (scale (enemyScale / 2)
+                                     (enemyScale / 2) (getEnemyModel enemyType))
                 where
                     getEnemyModel Asteroid = asteroidModel
                     getEnemyModel Alien    = scale 0.05 0.05 alienModel
@@ -44,3 +46,4 @@ draw horizontalResolution verticalResolution world@(World{..})
             drawEntity' entity model    = uncurry translate (position entity) $
                                           rotate (radToDeg (1/2 * pi -
                                           argV (direction entity))) model
+            drawStar (Vector3 x y _)    = Translate x y starModel
