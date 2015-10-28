@@ -19,18 +19,34 @@ import System.Random
 import Model
 
 -- | Time handling
--- TODO make dead enemies explode, detect if the player gets hit, improve enemy hitboxes and keep score
+-- TODO detect if the player gets hit, improve enemy hitboxes and keep score
 timeHandler :: Float -> World -> World
-timeHandler time world@World{..} = world {
+timeHandler time world@World{..} 
+    | not (alive player) = world {
+    rndGen      = snd $ next rndGen,
+    enemies     = map updatePosition enemies,
+    projectiles = map updatePosition projectiles,
+    explosions  = map updatePosition newExplosions}
+    | playerIsHit        = world {
+    rndGen      = snd $ next rndGen,
+    player      = player {alive = False},
+    enemies     = map updatePosition enemies,
+    projectiles = map updatePosition projectiles,
+    exhausts    = [],
+    powerUps    = [],
+    explosions  = map updatePosition (newExplosions ++ playerExplosion)}
+    | otherwise = world {
     rndGen      = snd $ next rndGen,
     player      = newPlayer,
     enemies     = map updatePosition newEnemies,
     projectiles = map updatePosition $ newProjectiles shootAction,
     exhausts    = map updatePosition $ newExhausts movementAction,
     powerUps    = map updatePosition newPowerUps,
+    explosions  = map updatePosition newExplosions,
     shootAction = DontShoot,
     nextID      = if spawnEnemy then nextID + 1 else nextID }
     where
+        playerIsHit     = (or' $ map (player `inside`) enemies) || (or' $ map (\p -> pointInBox (position p) (position player + (4, 4)) (position player - (4, 4))) projectiles)
         randomList      = randomRs (0, 1000) rndGen :: [Int]
         rndNum          = fst $ random rndGen :: Int
         rndGens         = split rndGen
@@ -39,8 +55,8 @@ timeHandler time world@World{..} = world {
         posNP           = position newPlayer
         spawnEnemy      = fst (randomR (0, spawnChance) rndGen) == 0
         inBounds entity = f $ position entity
-            where f (x, y) = not (x > resolutionX || x < (- resolutionX) ||
-                                  y > resolutionY || y < (- resolutionY))
+            where f (x, y) = not (x > resolutionX / 2 || x < (- resolutionX / 2) ||
+                                  y > resolutionY / 2 || y < (- resolutionY / 2))
         enemyProjectileList = [(e, p) | e <- enemies, p <- projectiles,
                               (p `inside` e) && (shooter p /= entityID e)]
         inside p e = pointInBox (position p) topLeft bottomRight
@@ -53,8 +69,8 @@ timeHandler time world@World{..} = world {
                                   map updateAlien newEnemies'
                    | otherwise  = map updateAlien newEnemies'
             where
-                newEnemies' = (filter (\e -> not $ elem e
-                              (map fst enemyProjectileList)) enemies)
+                newEnemies' = filter inBounds ((filter (\e -> not $ elem e
+                              (map fst enemyProjectileList)) enemies))
                 updateAlien e@Enemy{..} | enemyType == Asteroid = e
                                         | enemyType == Alien    = e {
                                    direction = normalizeV $ posNP - position,
@@ -75,8 +91,7 @@ timeHandler time world@World{..} = world {
                           enemyProjectileList)) projectiles) ++ enemyProjecs
         newProjectiles DontShoot =                              newProjectiles'
         newProjectiles Shoot     = Projectile posNP spd dir 0 : newProjectiles'
-            where
-                
+            where                
                 spd = speed newPlayer + projectileSpeed `mulSV` dir
                 dir = direction newPlayer
         enemyProjecs = mapMaybe mkProjectile enemies
@@ -99,20 +114,39 @@ timeHandler time world@World{..} = world {
                         dir = ((fromIntegral n / 2000 + 3 / 4) * pi) `rotateV`
                               direction newPlayer
         newPowerUps         = powerUps -- TODO add random powerUps
-        newPlayer           = update player -- TODO prevent outofbounds exception
+        newExplosions       = concatMap (mkExplosion . fst) enemyProjectileList
+                              ++ filter inBounds explosions
+            where
+                mkExplosion e@Enemy{..} = map f (zip (take (truncate enemyScale
+                                          * 10) (randomRs (1, 10) (fst rndGens))
+                                          ) (take (truncate enemyScale * 10)
+                                          (randomRs (0, 2 * pi) (snd rndGens))))
+                    where
+                        f (spd', dir') = Exhaust position (spd + speed) dir
+                            where
+                                spd = spd' `mulSV` dir
+                                dir = unitVectorAtAngle dir'
+        playerExplosion = map f (zip (take 2000 (randomRs (1, 10) (fst rndGens))) (randomRs (0, 2 * pi) (snd rndGens)))
+                    where
+                        f (spd', dir') = Exhaust (position player) (spd + speed player) dir
+                            where
+                                spd = spd' `mulSV` dir
+                                dir = unitVectorAtAngle dir'
+        newPlayer           = if not $ inBounds newPlayer' then rotate rotateAction $ player {speed = (0, 0)} else newPlayer'
+        newPlayer'          = update player
         update p@Player{..} = updatePosition $ accelerate movementAction
                               $ rotate rotateAction p
-            where
-                accelerate NoMovement p@Player{..} = p
-                    {speed = if magV speed < 0.05 then (0, 0)
-                             else (1 - deceleration) `mulSV` speed}
-                accelerate Thrust     p@Player{..} = p
-                    {speed = (1 - deceleration) `mulSV` (speed +
-                    mulSV acceleration (unitVectorAtAngle $ argV direction))}
-                rotate NoRotation     p            = p
-                rotate RotateLeft     p@Player{..} = p
-                    {direction =    rotationSpeed  `rotateV` direction}
-                rotate RotateRight    p@Player{..} = p
-                    {direction = (- rotationSpeed) `rotateV` direction}
+        accelerate NoMovement p@Player{..} = p
+            {speed = if magV speed < 0.05 then (0, 0)
+                     else (1 - deceleration) `mulSV` speed}
+        accelerate Thrust     p@Player{..} = p
+            {speed = (1 - deceleration) `mulSV` (speed +
+            mulSV acceleration (unitVectorAtAngle $ argV direction))}
+        rotate NoRotation     p            = p
+        rotate RotateLeft     p@Player{..} = p
+            {direction =    rotationSpeed  `rotateV` direction}
+        rotate RotateRight    p@Player{..} = p
+            {direction = (- rotationSpeed) `rotateV` direction}
+
         updatePosition e = e {position = newPosition}
             where newPosition = speed e + position e

@@ -14,7 +14,7 @@ import Model
 -- | Drawing
 
 playerModel     = color white $ polygon [(0, 10), (-5, -5), (5, -5)] -- TODO improve model
-asteroidModel   = color white $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] -- TODO improve model
+asteroidModel   = color white $ polygon [(-1, -1), (-1, 1), (1, 1), (1, -1)] -- TODO improve model
 alienModel      = color white $ polygon [(0, 5), (-5, -5), (5, -5)] -- TODO improve model
 projectileModel = color white $ polygon [(0, 0), (0, 2), (2, 2), (2, 0)] -- TODO improve model
 exhaustModel    = color white $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] -- TODO improve model
@@ -28,10 +28,11 @@ draw horizontalResolution verticalResolution world@(World{..})
                 pictures $ map drawEntity enemies,
                 pictures $ map drawEntity projectiles,
                 pictures $ map drawEntity exhausts,
+                pictures $ map drawEntity explosions,
                 drawEntity player]
         where
-            drawEntity p@Player{..} = drawEntity' p playerModel
-            drawEntity e@Enemy{..}  = drawEntity' e (scale enemyScale enemyScale
+            drawEntity p@Player{..} = if alive then drawEntity' p playerModel else Blank
+            drawEntity e@Enemy{..}  = drawEntity' e (scale (enemyScale / 2) (enemyScale / 2)
                                       (getEnemyModel enemyType))
                 where
                     getEnemyModel Asteroid = asteroidModel

@@ -21,6 +21,7 @@ data World = World {
         projectiles      :: [Entity],
         exhausts         :: [Entity],
         powerUps         :: [Entity],
+        explosions       :: [Entity],
         gameState        :: GameState,
         nextID           :: Int
     }
@@ -41,7 +42,8 @@ data Entity         = Player {
         position    :: Point, -- Coördinate the x, y plane.
         speed       :: Vector,-- The length is the absolute speed, the direction
                               -- is the direction of the movement.
-        direction   :: Vector -- As direction vector, make sure it is nomalized.
+        direction   :: Vector,-- As direction vector, make sure it is nomalized.
+        alive       :: Bool
     }
                     | Enemy {
         position    :: Point,
@@ -116,8 +118,8 @@ initial seed x y = World {
             movementAction = NoMovement, shootAction = DontShoot,
             resolutionX = x, resolutionY = y, player = defaultPlayer,
             enemies = [], projectiles = [], exhausts = [], powerUps = [],
-            gameState = defaultGameState, nextID = 1 }
+            explosions = [], gameState = defaultGameState, nextID = 1 }
     where
-        defaultPlayer    = Player {
-                          position = (0, 0), speed = (0, 0), direction = (0, 1)}
+        defaultPlayer    = Player { position  = (0, 0), speed = (0, 0),
+                                    direction = (0, 1), alive = True  }
         defaultGameState = GameState {score = 0, scoreMultiplier = 0}
