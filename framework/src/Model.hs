@@ -33,8 +33,9 @@ data MovementAction = NoMovement | Thrust
     deriving (Eq)
 data ShootAction    = Shoot      | DontShoot
     deriving (Eq)
+    
 data Vector3 = Vector3 Float Float Float
-    deriving (Show)
+
 data GameState = GameState {
         score           :: Int,
         scoreMultiplier :: Int
@@ -84,11 +85,6 @@ instance Random Vector3 where
             int3 = randomR (lz, hz) (snd int2)
     random = randomR (Vector3 0 0 0, Vector3 1 1 1)
     
-instance Random EnemyType where
-    randomR (l, h) g = f (randomR (fromEnum l, fromEnum h) g)
-        where f (enemyType, rng) = (toEnum enemyType, rng)
-    random           = randomR (minBound, maxBound)
-    
 -- In unit lengths per frame.
 acceleration :: Float
 acceleration = 0.09
@@ -116,22 +112,28 @@ minEnemyScale = 10.0
 -- In unit lengths
 maxEnemyScale :: Float
 maxEnemyScale = 100.0
--- There is a chance of 1 to this value for an enemy to spawn each frame
-spawnChance :: Int
-spawnChance = 60
--- There is a chance of 1 to this value for a powerUp to spawn each frame
-powerUpChance :: Int
-powerUpChance = 180
--- There is a chance of 1 to this value for each enemy to shoot each frame
+-- Chance to spawn an enemy each frame
+spawnChance :: (Int, Int)
+spawnChance = (1, 60)
+-- Chance to spawn a powerUp each frame
+powerUpChance :: (Int, Int)
+powerUpChance = (1, 180)
+-- Chance for each enemy to schoot each frame
 shootChance :: Int
 shootChance = 360
+-- Chance that an enemy is an alien
+alienChance :: (Int, Int)
+alienChance = (1, 5)
 -- In unit lengths
-scrollDistance = 0.001 :: Float
+scrollDistance :: Float
+scrollDistance = 0.001
+-- The distance into the screen plane at which stars do not scroll
+horizon :: Float
 horizon = 1000000 :: Float
 
 initial :: Int -> Float -> Float -> World
 initial seed x y = World {
-            rndGen = mkStdGen seed, rotateAction = NoRotation,
+            rndGen = rng, rotateAction = NoRotation,
             movementAction = NoMovement, shootAction = DontShoot,
             resolutionX = x, resolutionY = y, player = defaultPlayer,
             enemies = [], projectiles = [], exhausts = [], powerUps = [],
@@ -142,4 +144,5 @@ initial seed x y = World {
                                     direction = (0, 1), alive = True  }
         defaultGameState = GameState {score = 0, scoreMultiplier = 0}
         randomStars = take 1000 (randomRs ((Vector3 (- x / 2) (- y / 2) 1000),
-                      (Vector3 (x / 2) (y / 2) 10000)) (mkStdGen seed))
+                      (Vector3 (x / 2) (y / 2) 10000)) rng)
+        rng = mkStdGen seed

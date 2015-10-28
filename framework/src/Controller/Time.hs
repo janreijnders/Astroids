@@ -19,33 +19,33 @@ import System.Random
 import Model
 
 -- | Time handling
--- TODO improve enemy hitboxes and keep score
+-- TODO improve enemy hitboxes (they do not rotate with the enemy) and keep score
 timeHandler :: Float -> World -> World
 timeHandler time world@World{..} 
     | not (alive player) = world {
-    rndGen      = snd $ next rndGen,
-    enemies     = map updatePosition enemies,
-    projectiles = map updatePosition projectiles,
-    explosions  = map updatePosition newExplosions}
+        rndGen      = snd $ next rndGen,
+        enemies     = map updatePosition enemies,
+        projectiles = map updatePosition projectiles,
+        explosions  = map updatePosition newExplosions}
     | playerIsHit = world {
-    rndGen      = snd $ next rndGen,
-    player      = player {alive = False},
-    enemies     = map updatePosition enemies,
-    projectiles = map updatePosition projectiles,
-    exhausts    = [],
-    powerUps    = [],
-    explosions  = map updatePosition (newExplosions ++ playerExplosion)}
+        rndGen      = snd $ next rndGen,
+        player      = player {alive = False},
+        enemies     = map updatePosition enemies,
+        projectiles = map updatePosition projectiles,
+        exhausts    = [],
+        powerUps    = [],
+        explosions  = map updatePosition (newExplosions ++ playerExplosion)}
     | otherwise = world {
-    rndGen      = snd $ next rndGen,
-    player      = newPlayer,
-    enemies     = map updatePosition newEnemies,
-    projectiles = map updatePosition $ newProjectiles shootAction,
-    exhausts    = map updatePosition $ newExhausts movementAction,
-    powerUps    = newPowerUps,
-    explosions  = map updatePosition newExplosions,
-    shootAction = DontShoot,
-    nextID      = if spawnEnemy then nextID + 1 else nextID,
-    stars       = map updateStar newStars}
+        rndGen      = snd $ next rndGen,
+        player      = newPlayer,
+        enemies     = map updatePosition newEnemies,
+        projectiles = map updatePosition $ newProjectiles shootAction,
+        exhausts    = map updatePosition $ newExhausts movementAction,
+        powerUps    = newPowerUps,
+        explosions  = map updatePosition newExplosions,
+        shootAction = DontShoot,
+        nextID      = if spawnEnemy then nextID + 1 else nextID,
+        stars       = map updateStar newStars}
     where
         playerIsHit     = (or' $ map (player `inside`) enemies) || (or' $ map
                           (\p -> pointInBox (position p) (position player +
@@ -53,18 +53,15 @@ timeHandler time world@World{..}
         randomList      = randomRs (0, 1000) rndGen :: [Int]
         rndNum          = fst $ random rndGen :: Int
         rndGens         = split rndGen
-        or' []          = False
-        or' xs          = or xs
         posNP           = position newPlayer
-        spawnEnemy      = fst (randomR (1, spawnChance)   rndGen) == 1
-        spawnPowerUp    = fst (randomR (1, powerUpChance) rndGen) == 1
+        spawnEnemy      = yesNo spawnChance rndGen
         inBounds entity = f $ position entity
             where f (x, y) = not 
-                              (x > resolutionX / 2 || x < (- resolutionX / 2) ||
-                               y > resolutionY / 2 || y < (- resolutionY / 2))
+                             (x > resolutionX / 2 || x < (- resolutionX / 2) ||
+                              y > resolutionY / 2 || y < (- resolutionY / 2))
         inBoundsStar (Vector3 x y _) = not
-                              (x > resolutionX / 2 || x < (- resolutionX / 2) ||
-                               y > resolutionY / 2 || y < (- resolutionY / 2))
+                             (x > resolutionX / 2 || x < (- resolutionX / 2) ||
+                              y > resolutionY / 2 || y < (- resolutionY / 2))
         enemyProjectileList = [(e, p) | e <- enemies, p <- projectiles,
                               (p `inside` e) && (shooter p /= entityID e)]
         inside p e = pointInBox (position p) topLeft bottomRight
@@ -100,7 +97,8 @@ timeHandler time world@World{..}
                 spd = fst (randomR (minEnemySpeed, maxEnemySpeed) rndGen)
                       `mulSV` dir
                 dir = normalizeV $ position newPlayer - pos
-                typ = fst $ random rndGen
+                typ | yesNo alienChance rndGen = Alien
+                    | otherwise = Asteroid
                 scl = fst $ randomR (minEnemyScale, maxEnemyScale) rndGen
         newProjectiles' = filter inBounds (filter (\p -> not $ elem p (map snd
                           enemyProjectileList)) projectiles) ++ enemyProjecs
@@ -128,8 +126,8 @@ timeHandler time world@World{..}
                         spd = (fromIntegral (n `mod` 100) / 20) `mulSV` dir
                         dir = ((fromIntegral n / 2000 + 3 / 4) * pi) `rotateV`
                               direction newPlayer
-        newPowerUps   | spawnPowerUp = mkPowerUp : powerUps
-                      | otherwise    =             powerUps
+        newPowerUps | yesNo powerUpChance rndGen = mkPowerUp : powerUps
+                    | otherwise    =             powerUps
             where
                 mkPowerUp = PowerUp (fst $ randomR (- resolutionX / 2,
                             resolutionX / 2) (fst rndGens), fst $ randomR
@@ -171,9 +169,22 @@ timeHandler time world@World{..}
         rotate RotateLeft     p@Player{..} = p
             {direction =    rotationSpeed  `rotateV` direction}
         rotate RotateRight    p@Player{..} = p
-            {direction = (- rotationSpeed) `rotateV` direction}
-        updatePosition e = e {position = newPosition}
-            where newPosition = speed e + position e       
+            {direction = (- rotationSpeed) `rotateV` direction}     
         updateStar (Vector3 x y z) = (Vector3 updatedX y z)
             where 
                 updatedX = x + 2 * (scrollDistance / (2 * z)) * (horizon - z)
+
+updatePosition :: Entity -> Entity
+updatePosition e = e {position = newPosition}
+            where newPosition = speed e + position e
+
+or' :: [Bool] -> Bool
+or' [] = False
+or' xs = or xs
+
+yesNo :: (Int, Int) -> StdGen -> Bool
+yesNo (a, b) g = fst (randomR (1, b) g) <= a
+
+inBounds' :: Num a => Ord a => (a, a) -> (a, a) -> Bool
+inBounds' (x, y) (boundX, boundY)  = not (x > boundX || x < (- boundX) ||
+                                         y > boundY || y < (- boundY))
