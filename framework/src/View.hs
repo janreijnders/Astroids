@@ -18,16 +18,17 @@ asteroidModel   = color white $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] -- TODO
 alienModel      = color white $ polygon [(0, 5), (-5, -5), (5, -5)] -- TODO improve model
 projectileModel = color white $ polygon [(0, 0), (0, 2), (2, 2), (2, 0)] -- TODO improve model
 exhaustModel    = color white $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] -- TODO improve model
+starModel       = color white $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] -- TODO improve model
 powerUpModel    = Blank -- TODO add powerUp model
 ui              = Blank -- TODO add score and other stuff
-background      = Blank -- TODO add stars with paralax
 
 draw :: Float -> Float -> World -> Picture
 draw horizontalResolution verticalResolution world@(World{..})
-    = pictures [background, ui,
+    = pictures [ui,
                 pictures $ map drawEntity enemies,
                 pictures $ map drawEntity projectiles,
                 pictures $ map drawEntity exhausts,
+                pictures $ map drawBackground background,
                 drawEntity player]
         where
             drawEntity p@Player{..} = drawEntity' p playerModel
@@ -42,3 +43,4 @@ draw horizontalResolution verticalResolution world@(World{..})
             drawEntity' entity model    = uncurry translate (position entity) $
                                           rotate (radToDeg (1/2 * pi -
                                           argV (direction entity))) model
+            drawBackground (Vector3 x y _) = Translate x y starModel
