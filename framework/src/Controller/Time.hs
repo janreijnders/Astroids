@@ -29,7 +29,8 @@ timeHandler time world@World{..} = world {
     exhausts    = map updatePosition $ newExhausts movementAction,
     powerUps    = map updatePosition newPowerUps,
     shootAction = DontShoot,
-    nextID      = if spawnEnemy then nextID + 1 else nextID }
+    nextID      = if spawnEnemy then nextID + 1 else nextID,
+    stars       = map updateStar newStars}
     where
         randomList      = randomRs (0, 1000) rndGen :: [Int]
         rndNum          = fst $ random rndGen :: Int
@@ -41,6 +42,8 @@ timeHandler time world@World{..} = world {
         inBounds entity = f $ position entity
             where f (x, y) = not (x > resolutionX || x < (- resolutionX) ||
                                   y > resolutionY || y < (- resolutionY))
+        inBoundsStar (Vector3 x y _) = not (x > resolutionX/2 || x < (- resolutionX/2) ||
+                                            y > resolutionY/2 || y < (- resolutionY/2))
         enemyProjectileList = [(e, p) | e <- enemies, p <- projectiles,
                               (p `inside` e) && (shooter p /= entityID e)]
         inside p e = pointInBox (position p) topLeft bottomRight
@@ -49,6 +52,11 @@ timeHandler time world@World{..} = world {
                         bottomRight = ep - es
                         ep          = position e
                         es          = (enemyScale e, enemyScale e)
+        newStars = filter inBoundsStar (stars ++ replacements)
+                  where
+                    filtered = 1000-length(filter inBoundsStar stars)
+                    replacements = take filtered (randomRs ((Vector3 (-resolutionX/2) (-resolutionY/2) (1000)),(Vector3 (-resolutionX/2) (resolutionY/2) (10000))) rndGen)
+                    
         newEnemies | spawnEnemy = Enemy pos spd dir typ scl nextID :
                                   map updateAlien newEnemies'
                    | otherwise  = map updateAlien newEnemies'
@@ -116,3 +124,11 @@ timeHandler time world@World{..} = world {
                     {direction = (- rotationSpeed) `rotateV` direction}
         updatePosition e = e {position = newPosition}
             where newPosition = speed e + position e
+       
+        updateStar (Vector3 x y z)= (Vector3 updatedX y z)
+                                  where 
+                                    updatedX = x+2*(0.5*scrollDistance/z)*(horizon-z)
+                                    
+                                    
+                                    
+        

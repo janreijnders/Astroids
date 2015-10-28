@@ -23,7 +23,7 @@ data World = World {
         powerUps         :: [Entity],
         gameState        :: GameState,
         nextID           :: Int,
-        background       :: [Vector3]
+        stars            :: [Vector3]
     }
     
 data RotateAction   = NoRotation | RotateLeft | RotateRight
@@ -119,6 +119,9 @@ spawnChance = 60
 -- There is a chance of 1 to this value for each enemy to shoot each frame
 shootChance :: Int
 shootChance = 360
+-- In unit lengths
+scrollDistance = 0.001 :: Float
+horizon = 1000000 :: Float
 
 initial :: Int -> Float -> Float -> World
 initial seed x y = World {
@@ -127,10 +130,10 @@ initial seed x y = World {
             resolutionX = x, resolutionY = y, player = defaultPlayer,
             enemies = [], projectiles = [], exhausts = [], powerUps = [],
             gameState = defaultGameState, nextID = 1,
-            background = randomBackground }
+            stars = randomStars }
             
     where
         defaultPlayer    = Player {
                           position = (0, 0), speed = (0, 0), direction = (0, 1)}
         defaultGameState = GameState {score = 0, scoreMultiplier = 0}
-        randomBackground = take 1000 (randomRs ((Vector3 (-x/2) (-y/2) (1000)),(Vector3 (x/2) (y/2) (10000))) (mkStdGen seed))
+        randomStars = take 1000 (randomRs ((Vector3 (-x/2) (-y/2) (1000)),(Vector3 (x/2) (y/2) (10000))) (mkStdGen seed))

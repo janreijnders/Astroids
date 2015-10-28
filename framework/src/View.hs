@@ -28,7 +28,7 @@ draw horizontalResolution verticalResolution world@(World{..})
                 pictures $ map drawEntity enemies,
                 pictures $ map drawEntity projectiles,
                 pictures $ map drawEntity exhausts,
-                pictures $ map drawBackground background,
+                pictures $ map drawStar stars,
                 drawEntity player]
         where
             drawEntity p@Player{..} = drawEntity' p playerModel
@@ -43,4 +43,4 @@ draw horizontalResolution verticalResolution world@(World{..})
             drawEntity' entity model    = uncurry translate (position entity) $
                                           rotate (radToDeg (1/2 * pi -
                                           argV (direction entity))) model
-            drawBackground (Vector3 x y _) = Translate x y starModel
+            drawStar (Vector3 x y _) = Translate x y starModel
