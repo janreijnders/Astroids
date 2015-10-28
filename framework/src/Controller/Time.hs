@@ -19,7 +19,7 @@ import System.Random
 import Model
 
 -- | Time handling
--- TODO detect if the player gets hit, improve enemy hitboxes and keep score
+-- TODO improve enemy hitboxes and keep score
 timeHandler :: Float -> World -> World
 timeHandler time world@World{..} 
     | not (alive player) = world {
@@ -27,7 +27,7 @@ timeHandler time world@World{..}
     enemies     = map updatePosition enemies,
     projectiles = map updatePosition projectiles,
     explosions  = map updatePosition newExplosions}
-    | playerIsHit        = world {
+    | playerIsHit = world {
     rndGen      = snd $ next rndGen,
     player      = player {alive = False},
     enemies     = map updatePosition enemies,
@@ -41,7 +41,7 @@ timeHandler time world@World{..}
     enemies     = map updatePosition newEnemies,
     projectiles = map updatePosition $ newProjectiles shootAction,
     exhausts    = map updatePosition $ newExhausts movementAction,
-    powerUps    = map updatePosition newPowerUps,
+    powerUps    = newPowerUps,
     explosions  = map updatePosition newExplosions,
     shootAction = DontShoot,
     nextID      = if spawnEnemy then nextID + 1 else nextID }
@@ -53,7 +53,8 @@ timeHandler time world@World{..}
         or' []          = False
         or' xs          = or xs
         posNP           = position newPlayer
-        spawnEnemy      = fst (randomR (0, spawnChance) rndGen) == 0
+        spawnEnemy      = fst (randomR (1, spawnChance)   rndGen) == 1
+        spawnPowerUp    = fst (randomR (1, powerUpChance) rndGen) == 1
         inBounds entity = f $ position entity
             where f (x, y) = not (x > resolutionX / 2 || x < (- resolutionX / 2) ||
                                   y > resolutionY / 2 || y < (- resolutionY / 2))
@@ -85,7 +86,7 @@ timeHandler time world@World{..}
                 spd = fst (randomR (minEnemySpeed, maxEnemySpeed) rndGen)
                       `mulSV` dir
                 dir = normalizeV $ position newPlayer - pos
-                typ = fst $ random rndGen -- TODO make weigthed so aliens are more rare
+                typ = fst $ random rndGen
                 scl = fst $ randomR (minEnemyScale, maxEnemyScale) rndGen
         newProjectiles' = filter inBounds (filter (\p -> not $ elem p (map snd
                           enemyProjectileList)) projectiles) ++ enemyProjecs
@@ -113,9 +114,12 @@ timeHandler time world@World{..}
                         spd = (fromIntegral (n `mod` 100) / 20) `mulSV` dir
                         dir = ((fromIntegral n / 2000 + 3 / 4) * pi) `rotateV`
                               direction newPlayer
-        newPowerUps         = powerUps -- TODO add random powerUps
-        newExplosions       = concatMap (mkExplosion . fst) enemyProjectileList
-                              ++ filter inBounds explosions
+        newPowerUps   | spawnPowerUp = mkPowerUp : powerUps
+                      | otherwise    =             powerUps
+            where
+                mkPowerUp = PowerUp (fst $ randomR (-resolutionX/2, resolutionX/2) (fst rndGens), fst $ randomR (-resolutionY/2, resolutionY/2) (snd rndGens)) (0, 0)
+        newExplosions = concatMap (mkExplosion . fst) enemyProjectileList
+                        ++ filter inBounds explosions
             where
                 mkExplosion e@Enemy{..} = map f (zip (take (truncate enemyScale
                                           * 10) (randomRs (1, 10) (fst rndGens))

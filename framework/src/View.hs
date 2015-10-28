@@ -18,7 +18,7 @@ asteroidModel   = color white $ polygon [(-1, -1), (-1, 1), (1, 1), (1, -1)] -- 
 alienModel      = color white $ polygon [(0, 5), (-5, -5), (5, -5)] -- TODO improve model
 projectileModel = color white $ polygon [(0, 0), (0, 2), (2, 2), (2, 0)] -- TODO improve model
 exhaustModel    = color white $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] -- TODO improve model
-powerUpModel    = Blank -- TODO add powerUp model
+powerUpModel    = color white $ polygon [(-10, -10), (-10, 10), (10, 10), (10, -10)] -- TODO add powerUp model
 ui              = Blank -- TODO add score and other stuff
 background      = Blank -- TODO add stars with paralax
 
@@ -29,6 +29,7 @@ draw horizontalResolution verticalResolution world@(World{..})
                 pictures $ map drawEntity projectiles,
                 pictures $ map drawEntity exhausts,
                 pictures $ map drawEntity explosions,
+                pictures $ map drawEntity powerUps,
                 drawEntity player]
         where
             drawEntity p@Player{..} = if alive then drawEntity' p playerModel else Blank

@@ -108,6 +108,9 @@ maxEnemyScale = 100.0
 -- There is a chance of 1 to this value for an enemy to spawn each frame
 spawnChance :: Int
 spawnChance = 60
+-- There is a chance of 1 to this value for a powerUp to spawn each frame
+powerUpChance :: Int
+powerUpChance = 180
 -- There is a chance of 1 to this value for each enemy to shoot each frame
 shootChance :: Int
 shootChance = 360
