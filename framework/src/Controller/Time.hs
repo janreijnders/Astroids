@@ -59,12 +59,12 @@ timeHandler time world@World{..}
         spawnEnemy      = fst (randomR (1, spawnChance)   rndGen) == 1
         spawnPowerUp    = fst (randomR (1, powerUpChance) rndGen) == 1
         inBounds entity = f $ position entity
-            where f (x, y) =
-                not (x > resolutionX / 2 || x < (- resolutionX / 2) ||
-                     y > resolutionY / 2 || y < (- resolutionY / 2))
-        inBoundsStar (Vector3 x y _) =
-                not (x > resolutionX / 2 || x < (- resolutionX / 2) ||
-                     y > resolutionY / 2 || y < (- resolutionY / 2))
+            where f (x, y) = not 
+                              (x > resolutionX / 2 || x < (- resolutionX / 2) ||
+                               y > resolutionY / 2 || y < (- resolutionY / 2))
+        inBoundsStar (Vector3 x y _) = not
+                              (x > resolutionX / 2 || x < (- resolutionX / 2) ||
+                               y > resolutionY / 2 || y < (- resolutionY / 2))
         enemyProjectileList = [(e, p) | e <- enemies, p <- projectiles,
                               (p `inside` e) && (shooter p /= entityID e)]
         inside p e = pointInBox (position p) topLeft bottomRight
