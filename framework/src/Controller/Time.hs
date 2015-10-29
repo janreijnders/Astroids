@@ -45,7 +45,8 @@ timeHandler time world@World{..}
         explosions  = map updatePosition newExplosions,
         shootAction = DontShoot,
         nextID      = if spawnEnemy then nextID + 1 else nextID,
-        stars       = map updateStar newStars}
+        stars       = map updateStar newStars,
+        gameState   = newGameState }
     where
         playerIsHit     = (or' $ map (player `inside`) enemies) || (or' $ map
                           (\p -> pointInBox (position p) (position player +
@@ -54,7 +55,7 @@ timeHandler time world@World{..}
         rndNum          = fst $ random rndGen :: Int
         rndGens         = split rndGen
         posNP           = position newPlayer
-        spawnEnemy      = yesNo spawnChance rndGen
+        spawnEnemy      = yesNo spawnChance (fst rndGens)
         inBounds entity = f $ position entity
             where f (x, y) = not 
                              (x > resolutionX / 2 || x < (- resolutionX / 2) ||
@@ -75,8 +76,8 @@ timeHandler time world@World{..}
                     filtered     = filter inBoundsStar stars
                     replacements = take (1000 - length filtered) (randomRs
                                    ((Vector3 (- resolutionX / 2) (- resolutionY
-                                   / 2) 1000), (Vector3 (- resolutionX/2)
-                                   (resolutionY/2) 10000)) rndGen)                    
+                                   / 2) 1000), (Vector3 (- resolutionX / 2)
+                                   (resolutionY / 2) 10000)) rndGen)                    
         newEnemies | spawnEnemy = Enemy pos spd dir typ scl nextID :
                                   map updateAlien newEnemies'
                    | otherwise  = map updateAlien newEnemies'
@@ -97,7 +98,7 @@ timeHandler time world@World{..}
                 spd = fst (randomR (minEnemySpeed, maxEnemySpeed) rndGen)
                       `mulSV` dir
                 dir = normalizeV $ position newPlayer - pos
-                typ | yesNo alienChance rndGen = Alien
+                typ | yesNo alienChance (snd rndGens) = Alien
                     | otherwise = Asteroid
                 scl = fst $ randomR (minEnemyScale, maxEnemyScale) rndGen
         newProjectiles' = filter inBounds (filter (\p -> not $ elem p (map snd
@@ -126,13 +127,15 @@ timeHandler time world@World{..}
                         spd = (fromIntegral (n `mod` 100) / 20) `mulSV` dir
                         dir = ((fromIntegral n / 2000 + 3 / 4) * pi) `rotateV`
                               direction newPlayer
-        newPowerUps | yesNo powerUpChance rndGen = mkPowerUp : powerUps
-                    | otherwise    =             powerUps
+        newPowerUps | yesNo powerUpChance rndGen = mkPowerUp : filter (\p -> not
+                                                   (player `inside` p)) powerUps
+                    | otherwise = filter (\p -> not (player `inside` p))
+                                                                        powerUps
             where
                 mkPowerUp = PowerUp (fst $ randomR (- resolutionX / 2,
                             resolutionX / 2) (fst rndGens), fst $ randomR
                             (- resolutionY / 2, resolutionY / 2) (snd rndGens))
-                            (0, 0)
+                            (0, 0) 10
         newExplosions = concatMap (mkExplosion . fst) enemyProjectileList
                         ++ filter inBounds explosions
             where
@@ -173,6 +176,9 @@ timeHandler time world@World{..}
         updateStar (Vector3 x y z) = (Vector3 updatedX y z)
             where 
                 updatedX = x + 2 * (scrollDistance / (2 * z)) * (horizon - z)
+        newGameState = gameState {scoreMultiplier = scoreMultiplier gameState +
+                                  max 0 (length powerUps - length newPowerUps),
+                                  score = scoreMultiplier gameState * length (filter (\x -> shooter (snd x) == 0) enemyProjectileList) + score gameState}
 
 updatePosition :: Entity -> Entity
 updatePosition e = e {position = newPosition}

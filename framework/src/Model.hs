@@ -69,7 +69,8 @@ data Entity         = Player {
     }
                     | PowerUp {
         position    :: Point,
-        direction   :: Vector
+        direction   :: Vector,
+        enemyScale  :: Float
     }
     deriving (Eq)
 
@@ -87,13 +88,13 @@ instance Random Vector3 where
     
 -- In unit lengths per frame.
 acceleration :: Float
-acceleration = 0.09
+acceleration = 0.11
 -- In fraction of speed lost per frame.
 -- This value combined with the acceleration value implicitly gives the player a
 -- maximum speed. For realism set this to 0, for better gameplay increase this
 -- value.
 deceleration :: Float
-deceleration = 0.01
+deceleration = 0.02
 -- In radians
 rotationSpeed :: Float
 rotationSpeed = 1/32 * pi
@@ -105,7 +106,7 @@ minEnemySpeed :: Float
 minEnemySpeed = 1.0
 -- In unit lengths per frame
 maxEnemySpeed :: Float
-maxEnemySpeed = 5.0
+maxEnemySpeed = 3.0
 -- In unit lengths
 minEnemyScale :: Float
 minEnemyScale = 10.0
@@ -120,7 +121,7 @@ powerUpChance :: (Int, Int)
 powerUpChance = (1, 180)
 -- Chance for each enemy to schoot each frame
 shootChance :: Int
-shootChance = 360
+shootChance = 512
 -- Chance that an enemy is an alien
 alienChance :: (Int, Int)
 alienChance = (1, 5)
@@ -142,7 +143,7 @@ initial seed x y = World {
     where
         defaultPlayer    = Player { position  = (0, 0), speed = (0, 0),
                                     direction = (0, 1), alive = True  }
-        defaultGameState = GameState {score = 0, scoreMultiplier = 0}
+        defaultGameState = GameState {score = 0, scoreMultiplier = 1}
         randomStars = take 1000 (randomRs ((Vector3 (- x / 2) (- y / 2) 1000),
                       (Vector3 (x / 2) (y / 2) 10000)) rng)
         rng = mkStdGen seed

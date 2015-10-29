@@ -47,3 +47,4 @@ draw horizontalResolution verticalResolution world@(World{..})
                                           rotate (radToDeg (1/2 * pi -
                                           argV (direction entity))) model
             drawStar (Vector3 x y _)    = Translate x y starModel
+            ui = translate (- resolutionX / 2.5) (- resolutionY / 2.5) $ scale 0.1 0.1 $ Color white $ Text ("Score: " ++ show (score gameState) ++ " Multiplier: " ++ show (scoreMultiplier gameState))
