@@ -53,7 +53,7 @@ data Entity         = Player {
         speed       :: Vector,
         direction   :: Vector,
         enemyType   :: EnemyType,
-        enemyScale  :: Float,
+        entityScale :: Float,
         entityID    :: Int
     }
                     | Projectile {
@@ -62,7 +62,7 @@ data Entity         = Player {
         direction   :: Vector,
         shooter     :: Int
     }
-                    | Exhaust {
+                    | Particle {
         position    :: Point,
         speed       :: Vector,
         direction   :: Vector
@@ -70,7 +70,7 @@ data Entity         = Player {
                     | PowerUp {
         position    :: Point,
         direction   :: Vector,
-        enemyScale  :: Float
+        entityScale :: Float
     }
     deriving (Eq)
 
@@ -108,11 +108,11 @@ minEnemySpeed = 1.0
 maxEnemySpeed :: Float
 maxEnemySpeed = 3.0
 -- In unit lengths
-minEnemyScale :: Float
-minEnemyScale = 10.0
+minentityScale :: Float
+minentityScale = 10.0
 -- In unit lengths
-maxEnemyScale :: Float
-maxEnemyScale = 100.0
+maxentityScale :: Float
+maxentityScale = 100.0
 -- Chance to spawn an enemy each frame
 spawnChance :: (Int, Int)
 spawnChance = (1, 60)

@@ -19,7 +19,7 @@ import System.Random
 import Model
 
 -- | Time handling
--- TODO improve enemy hitboxes (they do not rotate with the enemy) and keep score
+
 timeHandler :: Float -> World -> World
 timeHandler time world@World{..} 
     | not (alive player) = world {
@@ -66,18 +66,18 @@ timeHandler time world@World{..}
         enemyProjectileList = [(e, p) | e <- enemies, p <- projectiles,
                               (p `inside` e) && (shooter p /= entityID e)]
         inside p e = pointInBox (position p) topLeft bottomRight
-                    where
-                        topLeft     = ep + es
-                        bottomRight = ep - es
-                        ep          = position e
-                        es          = (enemyScale e, enemyScale e)
+            where
+                topLeft     = ep + es
+                bottomRight = ep - es
+                ep          = position e
+                es          = (entityScale e, entityScale e)
         newStars = filtered ++ replacements
-                  where
-                    filtered     = filter inBoundsStar stars
-                    replacements = take (1000 - length filtered) (randomRs
-                                   ((Vector3 (- resolutionX / 2) (- resolutionY
-                                   / 2) 1000), (Vector3 (- resolutionX / 2)
-                                   (resolutionY / 2) 10000)) rndGen)                    
+            where
+                filtered     = filter inBoundsStar stars
+                replacements = take (1000 - length filtered) (randomRs
+                           ((Vector3 (- resolutionX / 2) (- resolutionY
+                           / 2) 1000), (Vector3 (- resolutionX / 2)
+                           (resolutionY / 2) 10000)) rndGen)                    
         newEnemies | spawnEnemy = Enemy pos spd dir typ scl nextID :
                                   map updateAlien newEnemies'
                    | otherwise  = map updateAlien newEnemies'
@@ -100,7 +100,7 @@ timeHandler time world@World{..}
                 dir = normalizeV $ position newPlayer - pos
                 typ | yesNo alienChance (snd rndGens) = Alien
                     | otherwise = Asteroid
-                scl = fst $ randomR (minEnemyScale, maxEnemyScale) rndGen
+                scl = fst $ randomR (minentityScale, maxentityScale) rndGen
         newProjectiles' = filter inBounds (filter (\p -> not $ elem p (map snd
                           enemyProjectileList)) projectiles) ++ enemyProjecs
         newProjectiles DontShoot =                              newProjectiles'
@@ -117,11 +117,11 @@ timeHandler time world@World{..}
                 spd' = speed e + projectileSpeed `mulSV` dir'
                 dir' = direction e
         newExhausts NoMovement   = take (length exhausts - 15) exhausts
-        newExhausts Thrust       = map mkExhaust (take 15 randomList)
+        newExhausts Thrust       = map mkParticle (take 15 randomList)
                                    ++ take 15 exhausts
             where                
-                mkExhaust :: Int -> Entity
-                mkExhaust n = Exhaust pos spd dir
+                mkParticle :: Int -> Entity
+                mkParticle n = Particle pos spd dir
                     where
                         pos = position newPlayer
                         spd = (fromIntegral (n `mod` 100) / 20) `mulSV` dir
@@ -139,19 +139,19 @@ timeHandler time world@World{..}
         newExplosions = concatMap (mkExplosion . fst) enemyProjectileList
                         ++ filter inBounds explosions
             where
-                mkExplosion e@Enemy{..} = map f (zip (take (truncate enemyScale
+                mkExplosion e@Enemy{..} = map f (zip (take (truncate entityScale
                                           * 10) (randomRs (1, 10) (fst rndGens))
-                                          ) (take (truncate enemyScale * 10)
+                                          ) (take (truncate entityScale * 10)
                                           (randomRs (0, 2 * pi) (snd rndGens))))
                     where
-                        f (spd', dir') = Exhaust position (spd + speed) dir
+                        f (spd', dir') = Particle position (spd + speed) dir
                             where
                                 spd = spd' `mulSV` dir
                                 dir = unitVectorAtAngle dir'
         playerExplosion = map f (zip (take 2000 (randomRs (1, 10) (fst rndGens))
                           ) (randomRs (0, 2 * pi) (snd rndGens)))
                     where
-                        f (spd', dir') = Exhaust (position player) (spd + speed
+                        f (spd', dir') = Particle (position player) (spd + speed
                                          player) dir
                             where
                                 spd = spd' `mulSV` dir
@@ -178,7 +178,9 @@ timeHandler time world@World{..}
                 updatedX = x + 2 * (scrollDistance / (2 * z)) * (horizon - z)
         newGameState = gameState {scoreMultiplier = scoreMultiplier gameState +
                                   max 0 (length powerUps - length newPowerUps),
-                                  score = scoreMultiplier gameState * length (filter (\x -> shooter (snd x) == 0) enemyProjectileList) + score gameState}
+                                  score = scoreMultiplier gameState * length
+                                  (filter (\x -> shooter (snd x) == 0)
+                                  enemyProjectileList) + score gameState}
 
 updatePosition :: Entity -> Entity
 updatePosition e = e {position = newPosition}
