@@ -24,13 +24,13 @@ timeHandler :: Float -> World -> World
 timeHandler time world@World{..} 
     | not (alive player) = world {
         rndGen      = snd $ next rndGen,
-        enemies     = map updatePosition enemies,
+        enemies     = map updatePosition newEnemies,
         projectiles = map updatePosition projectiles,
         explosions  = map updatePosition newExplosions}
     | playerIsHit = world {
         rndGen      = snd $ next rndGen,
         player      = player {alive = False},
-        enemies     = map updatePosition enemies,
+        enemies     = map updatePosition newEnemies,
         projectiles = map updatePosition projectiles,
         exhausts    = [],
         powerUps    = [],
@@ -50,7 +50,8 @@ timeHandler time world@World{..}
     where
         playerIsHit     = (or' $ map (player `inside`) enemies) || (or' $ map
                           (\p -> pointInBox (position p) (position player +
-                          (4, 4)) (position player - (4, 4))) projectiles)
+                          (15, 15)) (position player - (15, 15))) (filter
+                          (\p -> shooter p /= 0) projectiles))
         randomList      = randomRs (0, 1000) rndGen :: [Int]
         rndNum          = fst $ random rndGen :: Int
         rndGens         = split rndGen
@@ -87,7 +88,7 @@ timeHandler time world@World{..}
                 updateAlien e@Enemy{..} | enemyType == Asteroid = e
                                         | enemyType == Alien    = e {
                                    direction = normalizeV $ posNP - position,
-                                   speed     = speed + 0.0001 `mulSV` direction}
+                                   speed     = speed + 0.01 `mulSV` direction}
                 pos | fst $ random $ fst rndGens =
                                   (rndNegative * resolutionX / 2, fst $ randomR
                                   (- resolutionY / 2, resolutionY / 2) rndGen)
@@ -116,9 +117,9 @@ timeHandler time world@World{..}
                 pos' = position e
                 spd' = speed e + projectileSpeed `mulSV` dir'
                 dir' = direction e
-        newExhausts NoMovement   = take (length exhausts - 15) exhausts
+        newExhausts NoMovement   = take (length exhausts - 90) exhausts
         newExhausts Thrust       = map mkParticle (take 15 randomList)
-                                   ++ take 15 exhausts
+                                   ++ take 90 exhausts
             where                
                 mkParticle :: Int -> Entity
                 mkParticle n = Particle pos spd dir
@@ -135,7 +136,7 @@ timeHandler time world@World{..}
                 mkPowerUp = PowerUp (fst $ randomR (- resolutionX / 2,
                             resolutionX / 2) (fst rndGens), fst $ randomR
                             (- resolutionY / 2, resolutionY / 2) (snd rndGens))
-                            (0, 0) 10
+                            (0, 0) 20
         newExplosions = concatMap (mkExplosion . fst) enemyProjectileList
                         ++ filter inBounds explosions
             where
@@ -192,7 +193,3 @@ or' xs = or xs
 
 yesNo :: (Int, Int) -> StdGen -> Bool
 yesNo (a, b) g = fst (randomR (1, b) g) <= a
-
-inBounds' :: Num a => Ord a => (a, a) -> (a, a) -> Bool
-inBounds' (x, y) (boundX, boundY)  = not (x > boundX || x < (- boundX) ||
-                                         y > boundY || y < (- boundY))

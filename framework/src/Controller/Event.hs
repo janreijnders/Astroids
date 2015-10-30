@@ -4,6 +4,7 @@ module Controller.Event (
 
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game
+import System.Random
 
 import Model
 
@@ -26,5 +27,7 @@ eventHandler (EventKey (SpecialKey KeySpace) Down _ _) world
     = world { shootAction = Shoot }
 eventHandler (EventKey (SpecialKey KeySpace) Up   _ _) world
     = world { shootAction = DontShoot }
+eventHandler (EventKey (SpecialKey KeyEnter) Down  _ _) world
+    = initial ( fst $ next $ rndGen world) (resolutionX world) (resolutionY world)
 eventHandler _ world
     = world

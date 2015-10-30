@@ -13,31 +13,28 @@ import Model
 
 -- | Drawing
 
---playerModel     = color white $ polygon [(0, 10), (-5, -5), (5, -5)] -- TODO improve model
-asteroidModel   = color white $ polygon [(-1, -1), (-1, 1), (1, 1), (1, -1)] -- TODO improve model
-alienModel      = color white $ polygon [(0, 5), (-5, -5), (5, -5)] -- TODO improve model
-projectileModel = color red $ polygon [(0, 0), (0, 2), (2, 2), (2, 0)] -- TODO improve model
-particleModel   = color yellow $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] -- TODO improve model
-powerUpModel    = color green $ polygon [(-10, -10), (-10, 10), (10, 10), (10, -10)] -- TODO add powerUp model
-starModel       = color white $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] -- TODO improve model
+projectileModel = color red $ polygon [(-2, -2), (-2, 2), (2, 2), (2, -2)]
+particleModel   = polygon [(0, 0), (0, 1), (1, 1), (1, 0)]
+starModel       = color white $ polygon [(0, 0), (0, 1), (1, 1), (1, 0)] 
 
 draw :: Float -> Float -> Picture -> Picture -> Picture -> Picture -> World -> Picture
-draw horizontalResolution verticalResolution spaceshipSprite enemySprite powerupSprite asteroidSprite world@(World{..}) 
-    = pictures [ui,
-                pictures $ map drawEntity enemies,
-                pictures $ map drawEntity projectiles,
-                pictures $ map drawEntity exhausts,
-                pictures $ map drawEntity explosions,
-                pictures $ map drawEntity powerUps,
-                pictures $ map drawStar stars,
-                drawEntity player]
+draw horizontalResolution verticalResolution spaceshipSprite enemySprite
+                                  powerupSprite asteroidSprite world@(World{..}) 
+    = pictures [ pictures $ map drawStar stars,
+                 pictures $ map (\e -> drawEntity' e (Color orange $ particleModel)) explosions,
+                 pictures $ map drawEntity enemies,
+                 pictures $ map drawEntity powerUps,
+                 pictures $ map drawEntity projectiles ,
+                 pictures $ map (\e -> drawEntity' e (Color blue $ particleModel)) exhausts,
+                 drawEntity player, ui]
         where
             drawEntity p@Player{..} = if alive then drawEntity' p spaceshipSprite
-                                               else Blank
+                                               else translate (- resolutionX / 3) 0
+                $ scale 0.5 0.5 $ Color white $ Text "Press ENTER to restart"
             drawEntity e@Enemy{..}  = drawEntity' e (scale (entityScale / 2)
                                     (entityScale / 2) (getEnemyModel enemyType))
                 where
-                    getEnemyModel Asteroid =asteroidSprite
+                    getEnemyModel Asteroid = asteroidSprite
                     getEnemyModel Alien    = scale 0.05 0.05 enemySprite
             drawEntity p@Projectile{..} = drawEntity' p projectileModel
             drawEntity e@Particle{..}   = drawEntity' e particleModel
