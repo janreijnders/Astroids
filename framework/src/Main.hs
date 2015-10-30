@@ -23,12 +23,16 @@ import Controller
 main :: IO ()
 main = do
     args <- getArgs
+    playerSprite <- loadBMP "img/spaceship.bmp"
+    enemySprite <- loadBMP "img/Destroyer.bmp"
+    powerupSprite <- loadBMP "img/Powerup.bmp"
+    asteroidSprite <- loadBMP "img/Asteroid.bmp"
     time <- round <$> getPOSIXTime
     let (w, h, display) = chooseDisplay args
     let initial'        = initial time w h
     let background      = black
     let fps             = 60
-    play display background fps initial' (draw w h) eventHandler timeHandler
+    play display background fps initial' (draw w h playerSprite enemySprite powerupSprite (scale 0.02 0.02 asteroidSprite)) eventHandler timeHandler
 
 -- | Choose a display mode. Note that the resolution of a full screen mode
 --   should likely match the resolution of your monitor exactly.
